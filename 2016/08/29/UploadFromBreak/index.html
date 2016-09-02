@@ -1,0 +1,374 @@
+
+
+
+
+
+
+
+<!doctype html>
+<html lang="">
+<head>
+  <meta http-equiv="Content-Type" content="text/html" charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <meta name="author" content="海涛丶Larry">
+  
+  
+  
+  
+    <meta name="description" content="个人链接
+个人博客 : 个人博客主页
+iOS频道(iOSPD): 这是我个人整理的一个技术专题, 这里的文章都是比较有技术含量(不断更新)!
+微信公众号 : 
+
+
+代码区域
+123456789 #import "ViewController.h"@interface ViewController ()&lt;NSURLSessionDownloadDelegate&gt;//session下...">
+  
+  <title>iOS开发中,实现断点续传 [ 海涛丶Larry ]</title>
+  
+  
+    <link rel="shortcut icon" href="/favicon.ico">
+  
+  
+  <link rel="stylesheet" href="/css/random.css">
+<link rel="stylesheet" href="/css/vegas.min.css">
+<link rel="stylesheet" href="/css/highlight-railscasts.css">
+<link rel="stylesheet" href="/css/jquery.fancybox.css">
+<link rel="stylesheet" href="/css/iconfont/iconfont.css">
+<link rel="stylesheet" href="/css/jquery.fancybox-thumbs.css">
+<link rel="stylesheet" href="/css/plyr.css">
+  
+</head>
+
+<body>
+<div class="side-navigate hide-area">
+  
+  
+    <div class="item next">
+      <a href="/2016/08/26/YHTReachability/">
+        <div class="item-icon"></div>
+      </a>
+      <div class="item-title">
+        iOS开发,监测网络连接状态
+      </div>
+    </div>
+  
+</div>
+<div id="outer-container" class="hide-area">
+<div id="container">
+  <div id="menu-outer" class="slide-down">
+    <div id="menu-inner">
+      <div id="brand">
+        
+        <a onClick="openUserCard()">
+          <img id="avatar" src="http://a.hiphotos.baidu.com/image/pic/item/5ab5c9ea15ce36d3c5b8f78832f33a87e850b1cd.jpg"/>
+          <div id="homelink">海涛丶Larry</div>
+        </a>
+      </div>
+      <div id="menu-list">
+        <ul>
+        
+        
+          
+            <li>
+          
+            <a href="/index.html">首页</a>
+            
+          </li>
+        
+          
+            <li>
+          
+            <a href="/archives">文章</a>
+            
+          </li>
+        
+          
+            <li>
+          
+            <a href="/tags">关于</a>
+            
+          </li>
+        
+        </ul>
+      </div>
+      <div id="show-menu">
+        <button>Menu</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="content-outer">
+    <div id="content-inner">
+      
+      
+  <article id="post">
+    <h1>iOS开发中,实现断点续传</h1>
+    <p class="page-title-sub">
+      <span id = "post-title-date">Created at 2016-08-29</span>
+      
+        <span id = "post-title-updated">Updated at 2016-08-30</span>
+      
+      
+      
+    </p>
+    
+    <h3 id="个人链接"><a href="#个人链接" class="headerlink" title="个人链接"></a>个人链接</h3><ul>
+<li><a href="https://nslog-yuhaitao.github.io">个人博客</a> : 个人博客主页</li>
+<li><a href="http://www.jianshu.com/collection/d76ac79331c6" target="_blank" rel="external">iOS频道(iOSPD)</a>: 这是我个人整理的一个技术专题, 这里的文章都是比较有技术含量(不断更新)!</li>
+<li>微信公众号 : <div align="center"><br><img src="http://e.hiphotos.baidu.com/image/pic/item/18d8bc3eb13533faa6652597a0d3fd1f40345bb3.jpg" width="150" height="150"><br></div></li>
+</ul>
+<p><br><br><br></p>
+<h3 id="代码区域"><a href="#代码区域" class="headerlink" title="代码区域"></a>代码区域</h3><p><br></p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line"> <span class="meta">#import <span class="meta-string">"ViewController.h"</span></span></div><div class="line"><span class="class"><span class="keyword">@interface</span> <span class="title">ViewController</span> ()&lt;<span class="title">NSURLSessionDownloadDelegate</span>&gt;//<span class="title">session</span>下载协议</span></div><div class="line"><span class="keyword">@property</span> (<span class="keyword">weak</span>, <span class="keyword">nonatomic</span>) <span class="keyword">IBOutlet</span> <span class="built_in">UIButton</span> *downloadBtn;</div><div class="line"><span class="keyword">@property</span> (<span class="keyword">weak</span>, <span class="keyword">nonatomic</span>) <span class="keyword">IBOutlet</span> <span class="built_in">UIProgressView</span> *progressView;</div><div class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSData</span> * resumData;<span class="comment">//保存取消正在执行的下载任务时的下载数据</span></div><div class="line"><span class="comment">//下载任务</span></div><div class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSURLSessionDownloadTask</span> *task;</div><div class="line"><span class="keyword">@property</span> (<span class="keyword">nonatomic</span>, <span class="keyword">strong</span>) <span class="built_in">NSURLSession</span> *session;</div><div class="line"><span class="keyword">@end</span></div></pre></td></tr></table></figure>
+<p><br></p>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line"><span class="class"><span class="keyword">@implementation</span> <span class="title">ViewController</span></span></div><div class="line">- (<span class="keyword">void</span>)viewDidLoad &#123;</div><div class="line">    [<span class="keyword">super</span> viewDidLoad];</div><div class="line">    <span class="comment">// Do any additional setup after loading the view, typically from a nib.</span></div><div class="line">    <span class="keyword">self</span>.resumData  = [[<span class="built_in">NSUserDefaults</span> standardUserDefaults] objectForKey:<span class="string">@"data"</span>];</div><div class="line">    <span class="keyword">self</span>.progressView.progress = [[<span class="built_in">NSUserDefaults</span> standardUserDefaults] floatForKey:<span class="string">@"progress"</span>];</div><div class="line">    <span class="built_in">NSLog</span>(<span class="string">@"%@"</span>,<span class="built_in">NSHomeDirectory</span>());</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>界面已经消失</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">-(<span class="keyword">void</span>)viewDidDisappear:(<span class="built_in">BOOL</span>)animated</div><div class="line">&#123;</div><div class="line">    [<span class="keyword">super</span> viewDidDisappear:animated];</div><div class="line">    <span class="comment">//保存已经下载的数据</span></div><div class="line">    [[<span class="built_in">NSUserDefaults</span> standardUserDefaults] setObject:<span class="keyword">self</span>.resumData forKey:<span class="string">@"data"</span>];</div><div class="line">    <span class="comment">//保存进度</span></div><div class="line">    [[<span class="built_in">NSUserDefaults</span> standardUserDefaults] setFloat:<span class="keyword">self</span>.progressView.progress forKey:<span class="string">@"progress"</span>];</div><div class="line">    <span class="comment">//同步数据</span></div><div class="line">    [[<span class="built_in">NSUserDefaults</span> standardUserDefaults] synchronize];</div><div class="line"></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>下载</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div></pre></td><td class="code"><pre><div class="line">-(<span class="keyword">IBAction</span>)download:(<span class="keyword">id</span>)sender &#123;</div><div class="line">    <span class="comment">//创建一个后台模式配置</span></div><div class="line">    <span class="built_in">NSURLSessionConfiguration</span> *config = [<span class="built_in">NSURLSessionConfiguration</span> backgroundSessionConfigurationWithIdentifier:<span class="string">@"downloadTask"</span>];</div><div class="line">    <span class="comment">//创建session</span></div><div class="line">    _session = [<span class="built_in">NSURLSession</span> sessionWithConfiguration:config delegate:<span class="keyword">self</span> delegateQueue:[[<span class="built_in">NSOperationQueue</span> alloc]init]];</div><div class="line">    <span class="keyword">if</span> (<span class="keyword">self</span>.resumData) &#123;</div><div class="line">        <span class="comment">//如果已经下载过数据,用已经下载的数据得到一个新的任务 继续下载</span></div><div class="line">        <span class="keyword">self</span>.task = [_session downloadTaskWithResumeData:<span class="keyword">self</span>.resumData];</div><div class="line">    &#125;<span class="keyword">else</span></div><div class="line">    &#123;</div><div class="line">        <span class="built_in">NSString</span> * url = <span class="string">@"http://dldir1.qq.com/qqfile/QQforMac/QQ_V4.0.2.dmg"</span>;</div><div class="line">        <span class="built_in">NSMutableURLRequest</span> *request = [<span class="built_in">NSMutableURLRequest</span> requestWithURL:[<span class="built_in">NSURL</span> URLWithString:url]];</div><div class="line">       </div><div class="line">        <span class="keyword">self</span>.task = [_session downloadTaskWithRequest:request];</div><div class="line">    &#125;</div><div class="line">    </div><div class="line">    <span class="comment">//启动下载任务</span></div><div class="line">    [<span class="keyword">self</span>.task resume];</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>暂停</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">-(<span class="keyword">IBAction</span>)pause:(<span class="keyword">id</span>)sender &#123;</div><div class="line">    </div><div class="line">    <span class="comment">//取消正在进行的下载任务 resumeData 包含当前已下载的文件数据 和 完成断点续传所需要的所有内容</span></div><div class="line">    __<span class="keyword">weak</span> ViewController *weekSelf = <span class="keyword">self</span>;</div><div class="line">    [<span class="keyword">self</span>.task cancelByProducingResumeData:^(<span class="built_in">NSData</span> * _Nullable resumeData) &#123;</div><div class="line">        <span class="comment">//记录已下载的数据</span></div><div class="line">        weekSelf.resumData = resumeData;</div><div class="line">    &#125;];    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>服务器端向客户端传输一段数据调用一次（更新进度时可以用的函数）</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div></pre></td><td class="code"><pre><div class="line">-(<span class="keyword">void</span>)URLSession:(<span class="built_in">NSURLSession</span> *)session downloadTask:(<span class="built_in">NSURLSessionDownloadTask</span> *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite</div><div class="line">&#123;</div><div class="line">    <span class="comment">//totalBytesExpectedToWrite 期望写入的总长度</span></div><div class="line">    <span class="comment">//totalBytesWritten 已经写入的长度</span></div><div class="line">    <span class="comment">//bytesWritten  本次要写入的长度</span></div><div class="line">    <span class="comment">//进度 = （totalBytesWritten + bytesWritten）/ totalBytesExpectedToWrite</span></div><div class="line">    <span class="keyword">self</span>.progressView.progress = (totalBytesWritten + bytesWritten) *  <span class="number">1.0</span>/ totalBytesExpectedToWrite;</div><div class="line">    <span class="comment">//</span></div><div class="line">    <span class="built_in">NSLog</span>(<span class="string">@"更新进度"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>下载数据结束 调用这个方法  程序员根据需求是否要把数据保存到本地</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div></pre></td><td class="code"><pre><div class="line">-(<span class="keyword">void</span>)URLSession:(<span class="built_in">NSURLSession</span> *)session downloadTask:(<span class="built_in">NSURLSessionDownloadTask</span> *)downloadTask didFinishDownloadingToURL:(<span class="built_in">NSURL</span> *)location</div><div class="line">&#123;</div><div class="line">    <span class="comment">//保存到沙盒路径下的Documents文件夹下</span></div><div class="line">    <span class="built_in">NSString</span> * path = [<span class="built_in">NSString</span> stringWithFormat:<span class="string">@"%@/Documents/QQQQQ.dmg"</span>,<span class="built_in">NSHomeDirectory</span>()];    </div><div class="line">    <span class="comment">//文件本地URL</span></div><div class="line">    <span class="built_in">NSURL</span> *fileUrl = [<span class="built_in">NSURL</span> fileURLWithPath:path];</div><div class="line">    <span class="built_in">NSFileManager</span> *fm = [<span class="built_in">NSFileManager</span> defaultManager];</div><div class="line">    <span class="comment">//把文件从location 移动到沙盒中</span></div><div class="line">    [fm moveItemAtURL:location toURL:fileUrl error:<span class="literal">nil</span>];</div><div class="line">    <span class="built_in">NSLog</span>(<span class="string">@"下载文件结束"</span>);    </div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>任务结束</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">-(<span class="keyword">void</span>)URLSession:(<span class="built_in">NSURLSession</span> *)session task:(<span class="built_in">NSURLSessionTask</span> *)task didCompleteWithError:(<span class="built_in">NSError</span> *)error</div><div class="line">&#123;</div><div class="line">    <span class="built_in">NSLog</span>(<span class="string">@"任务结束"</span>);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<ul>
+<li>任务在后台执行结束之后，程序被唤醒后调用的方法</li>
+<li>[注意🐷] : 需要在APPDelegate中实现方法</li>
+</ul>
+<figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line">-(<span class="keyword">void</span>)URLSessionDidFinishEventsForBackgroundURLSession:(<span class="built_in">NSURLSession</span> *)session</div><div class="line">&#123;</div><div class="line">    <span class="built_in">NSLog</span>(<span class="string">@"唤醒后调用的协议方法"</span>);</div><div class="line">    <span class="comment">//调用一下,让其他的协议方法能够被执行</span></div><div class="line">    taskComplete();</div><div class="line">&#125;</div><div class="line"><span class="keyword">@end</span></div></pre></td></tr></table></figure>
+<h3 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h3><ul>
+<li>所有文章出自 海涛丶Larry 的博客<br></li>
+<li>未经本人允许不得转载, 转载请标明来源与作者, 谢谢合作! </li>
+</ul>
+
+  </article>
+  <div class="random-toc-area">
+  <button class="btn-hide-toc btn-hide-toc-show" style="display: none" onclick="TOCToggle()">Show TOC</button>
+  <button class="btn-hide-toc btn-hide-toc-hide" onclick="TOCToggle()">Hide TOC</button>
+  <div class="random-toc">
+    <h2>Table of Content</h2>
+    <ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#个人链接"><span class="toc-text">个人链接</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#代码区域"><span class="toc-text">代码区域</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#声明"><span class="toc-text">声明</span></a></li></ol>
+  </div>
+</div>
+
+  
+<nav id="pagination">
+  
+
+  
+
+  
+    <a href="/2016/08/26/YHTReachability/" class="next">Next post iOS开发,监测网络连接状态 &rarr;</a>
+  
+</nav>
+
+  <!-- JiaThis Button BEGIN -->
+
+<!-- JiaThis Button END -->
+
+
+      
+      
+      
+    </div>
+  </div>
+
+  <div id="bottom-outer">
+    <div id="bottom-inner">
+      Site by 海涛丶Larry using
+      <a href="http://hexo.io">Hexo</a> & <a href="https://github.com/stiekel/hexo-theme-random">Random</a>
+      <br>
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+
+
+<div id="user-card">
+  <div class="center-field">
+    <img class="avatar" src="http://a.hiphotos.baidu.com/image/pic/item/5ab5c9ea15ce36d3c5b8f78832f33a87e850b1cd.jpg">
+    <p id="description">我们没有说再见,只是很默契的不再打扰对方!</p>
+    <ul class="social-icon">
+  
+  
+    <li>
+      <a href="http://www.jianshu.com/collection/d76ac79331c6">
+        
+          iOSPD
+        
+      </a>
+    </li>
+  
+    <li>
+      <a href="https://github.com/NSLog-YuHaitao?tab=repositories">
+        
+          <i class="icon iconfont github">&#xe606;</i>
+        
+      </a>
+    </li>
+  
+    <li>
+      <a href="http://www.jianshu.com/users/c3dc9c3117a5/latest_articles">
+        
+          简书
+        
+      </a>
+    </li>
+  
+    <li>
+      <a href="http://weibo.com/5315408779/profile?topnav=1&wvr=6">
+        
+          <i class="icon iconfont weibo">&#xe602;</i>
+        
+      </a>
+    </li>
+  
+    <li>
+      <a href="http://gold.xitu.io/user/57a2e463165abd00613b46d8/tags">
+        
+          掘金
+        
+      </a>
+    </li>
+  
+    <li>
+      <a href="https://www.zhihu.com/people/NSLog-YuHaitao">
+        
+          <i class="icon iconfont zhihu">&#xe60b;</i>
+        
+      </a>
+    </li>
+  
+</ul>
+  </div>
+</div>
+
+
+<div id="btn-view">Hide</div>
+
+<script>
+// is trigger analytics / tongji script
+var isIgnoreHost = false;
+
+if(window && window.location && window.location.host) {
+  isIgnoreHost = ["localhost","127.0.0.1"].some(function(address){
+    return 0 === window.location.host.indexOf(address);
+  });
+}
+
+var isTriggerAnalytics = !( true && isIgnoreHost );
+
+</script>
+
+
+
+
+  
+  
+    <script src="/js/jquery-2.2.3.min.js"></script>
+  
+    <script src="/js/vegas.min.js"></script>
+  
+    <script src="/js/random.js"></script>
+  
+    <script src="/js/highlight.pack.js"></script>
+  
+    <script src="/js/jquery.mousewheel.pack.js"></script>
+  
+    <script src="/js/jquery.fancybox.pack.js"></script>
+  
+    <script src="/js/jquery.fancybox-thumbs.js"></script>
+  
+    <script src="/js/plyr.js"></script>
+  
+
+<script>
+
+  // fancybox
+  var backgroundImages = [];
+  
+  $('#post').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox') || $(this).parent().hasClass('fancybox-thumb')) return;
+      var alt = this.alt || this.title;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'post' + i);
+    });
+  });
+  $(".fancybox").fancybox();
+
+var vegasConfig = {"preload­Image":true,"transition":["slideLeft2","slideRight2","flash2"],"timer":true,"delay":5000,"shuffle":true,"count":28};
+var unsplashConfig = {"gravity":"north"};
+// is show background images
+var turnoffBackgroundImage = false;
+
+
+
+  turnoffBackgroundImage = true;
+
+
+var backgroundColor = "D7CCC8";
+
+$(".fancybox-thumb").fancybox({
+  prevEffect: 'none',
+  nextEffect: 'none',
+  helpers: {
+    title: {
+      type: 'outside'
+    },
+    thumbs: {
+      width: 50,
+      height: 50
+    }
+  }
+});
+
+// show video with plyr
+$(".video-container iframe").each(function(i){
+  var url = $(this).attr('src');
+  var id = url.split('/').pop();
+  var plyrContainer = document.createElement('div');
+  plyrContainer.className = 'plyr';
+  var plyrElement = document.createElement('div');
+  plyrElement.dataset.videoId = id;
+  switch(true) {
+    case url.search('youtube.com') >= 0:
+      plyrElement.dataset.type = 'youtube';
+      break;
+    case url.search('vimeo.com') >= 0:
+      plyrElement.dataset.type = 'vimeo';
+      break;
+    default:
+      return;
+  };
+  plyrContainer.appendChild(plyrElement);
+  $(this).parent().html(plyrContainer);
+});
+plyr.setup('.plyr', {iconUrl: '/css/sprite.svg'});
+</script>
+</body>
+</html>
+
