@@ -108,7 +108,7 @@ github下载地址 :Demo下...">
     <p class="page-title-sub">
       <span id = "post-title-date">Created at 2016-08-15</span>
       
-        <span id = "post-title-updated">Updated at 2016-08-26</span>
+        <span id = "post-title-updated">Updated at 2016-12-13</span>
       
       
       
@@ -152,7 +152,7 @@ github下载地址 :Demo下...">
 <figure class="highlight objc"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line"><span class="comment">//switch的值改变时</span></div><div class="line">-(<span class="keyword">IBAction</span>)switchValueChanged:(<span class="built_in">UISwitch</span> *)sender &#123;</div><div class="line">	<span class="keyword">if</span>(sender.on == <span class="literal">YES</span>) &#123;</div><div class="line">		<span class="comment">//夜间模式开启</span></div><div class="line">		[ThemeManagement shareManagement].isDarkTheme = <span class="literal">YES</span>; </div><div class="line">	&#125;<span class="keyword">else</span>&#123; </div><div class="line">		<span class="comment">//夜间模式关闭  </span></div><div class="line">		[ThemeManagement shareManagement].isDarkTheme = <span class="literal">NO</span>;  </div><div class="line">	&#125;  </div><div class="line">	<span class="comment">//发送通知改变主题模式  </span></div><div class="line">	[[<span class="built_in">NSNotificationCenter</span> defaultCenter]postNotificationName:<span class="string">@"ChangeTheme"</span> object:<span class="literal">nil</span>];  </div><div class="line">   	&#125;  </div></pre></td></tr></table></figure>
 <h1 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h1><p>实际项目中使用夜间模式时肯定不是那么简单的，但是思路都是一样的（通知+单例或本地数据持久化），只不过是要准备两套主题颜色。</p>
 <h1 id="声明"><a href="#声明" class="headerlink" title="声明"></a>声明</h1><ul>
-<li>所有文章出自 海涛丶Larry 的博客<br></li>
+<li>所有文章出自 Kenny Hito 的博客<br></li>
 <li>未经本人允许不得转载, 转载请标明来源与作者, 谢谢合作! </li>
 </ul>
 
